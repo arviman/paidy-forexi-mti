@@ -6,17 +6,17 @@ import fs2.Stream
 import org.http4s.blaze.server.BlazeServerBuilder
 
 object Main extends IOApp.Simple {
-  override def run: IO[Unit] = new Application[IO].stream().compile.drain
+  override def run: IO[Unit] = new Application().stream().compile.drain
 }
 
-class Application[F[_] : Async] {
+class Application {
 
-  def stream(): Stream[F, Unit] =
+  def stream(): Stream[IO, Unit] =
     for {
       config <- Config.stream("app")
-      module = new Module[F](config)
+      module = new Module(config)
 
-      _ <- BlazeServerBuilder[F]
+      _ <- BlazeServerBuilder[IO]
             .bindHttp(config.http.port, config.http.host)
             .withHttpApp(module.httpApp)
             .serve

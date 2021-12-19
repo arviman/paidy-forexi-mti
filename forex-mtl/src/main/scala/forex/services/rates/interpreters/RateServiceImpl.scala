@@ -1,23 +1,19 @@
 package forex.services.rates.interpreters
-
-import cats.{Applicative, Functor, Monad}
+import cats.effect.{IO, Ref}
 import cats.data.Validated
-import cats.effect.{Concurrent, Ref}
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.services.rates.RateService
 import forex.services.rates.errors.Error
 import forex.services.rates.errors.Error.CurrencyConversionFailed
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success, Try}
 /*import org.http4s.Method.GET
 import org.http4s.client._
 import org.http4s.client.dsl.io._
 import org.http4s.client.blaze._*/
 // stores all currencies in Currency -> uSD, can be extended later to use Pair as key
-class RateServiceImpl[F[_] : Applicative : Concurrent : Monad](val rateMap: F[Ref[F, Map[Currency, Rate]]]) extends RateService[F] {
-
+class RateServiceImpl() extends RateService {
+  val rateMapIO: IO[Ref[IO, Map[Currency, Rate]]] = Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
 
   private def getOldestTime(tm1: Timestamp, tm2: Timestamp): Timestamp = {
     if(tm1.value.compareTo(tm2.value)>0)
@@ -25,38 +21,49 @@ class RateServiceImpl[F[_] : Applicative : Concurrent : Monad](val rateMap: F[Re
     else tm1
   }
 
-  private def calculateTransitivePrice(m: Map[Currency, Rate], from: Currency, to: Currency): Price = {
-    val fromInUsd = m(from).price
-    val toInUsd = m(to).price
+  private def calculateTransitivePrice(fromPrice: Price, toPrice: Price): Price = {
+
     // (from -> to) = (from -> USD) / (to -> USD) i.e (from->USD) * (USD->to)
     // if 1 AED is 2 USD, and 1 USD is 5 SGD, then SGD-> USD is 0.2 and USD->SGD=5 (inverse value),so 1 AED = 2 * (5) SGD
-    Price(fromInUsd.value * toInUsd.inverseValue.value)
+    Price(fromPrice.value * toPrice.inverseValue.value)
+
   }
 
-  private def getRateForPairFromMap(pair: Rate.Pair, rmap: Ref[F, Map[Currency, Rate]]): F[Rate] = {
-    if (pair.to == Currency.USD || pair.from == Currency.USD) {
-      if (pair.to == Currency.USD)
-        rmap.get.map {
-          _ (pair.from)
-        }
-      else
-        rmap.get.map { m => Rate(pair, m(pair.to).price.inverseValue, m(pair.to).timestamp) }
-    }
-    else { // non-usd to non-usd conversion
-      rmap.get.map(m => Rate(pair, calculateTransitivePrice(m, pair.from, pair.to), getOldestTime(m(pair.from).timestamp, m(pair.to).timestamp)))
-    }
+
+  private def getRateForPairFromMap(pair: Rate.Pair, rateMap: Ref[IO, Map[Currency, Rate]]): IO[Option[Rate]] = {
+
+    def getRateFromMap(x: Map[Currency, Rate], currency: Currency): Option[Rate] = if (x.contains(currency)) Some(x(currency)) else None
+
+    for {
+      fromRate <- rateMap.get.map { getRateFromMap(_, pair.from) }
+      toRate <- rateMap.get.map { getRateFromMap(_, pair.to) }
+    } yield(
+      (fromRate, toRate) match {
+        case (Some(f), Some(t)) =>
+          if (pair.to == Currency.USD || pair.from == Currency.USD) {
+            if (pair.to == Currency.USD)
+              Some(f)
+            else
+              Some(Rate(pair, t.price.inverseValue, toRate.get.timestamp))
+          }
+          else { // non-usd to non-usd conversion
+            Some(Rate(pair, calculateTransitivePrice(f.price, t.price) , getOldestTime(fromRate.get.timestamp, toRate.get.timestamp)))
+          }
+        case _ => None
+      }    )
+
   }
 
-  override def get(pair: Rate.Pair):F[Validated[Error, Rate]] =
+  override def get(pair: Rate.Pair):IO[Validated[Error, Option[Rate]]] =
     try {
-      rateMap.flatMap(getRateForPairFromMap(pair, _))
-        .map(Validated.valid[Error, Rate])
+      rateMapIO.flatMap(getRateForPairFromMap(pair, _))
+        .map(r=>Validated.valid[Error, Option[Rate]](r))
     }
     catch {
       case _ : ArithmeticException =>
-        Validated.invalid[Error, Rate](CurrencyConversionFailed("Divide by zero Error")).pure[F]
-      case ex =>
-        Validated.invalid[Error, Rate](CurrencyConversionFailed("An exception occurred: " + ex.getMessage)).pure[F]
+        IO(Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("Divide by zero Error")))
+      case ex : Throwable =>
+        IO(Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage)))
     }
 
 

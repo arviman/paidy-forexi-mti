@@ -1,6 +1,6 @@
 package forex
 
 package object services {
-  type RatesService[F[_]] = rates.RateService[F]
+  type RatesService = rates.RateService
   final val RatesServices = rates.Interpreters
 }
