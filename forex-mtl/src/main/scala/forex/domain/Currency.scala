@@ -39,4 +39,6 @@ object Currency {
     case "USD" => USD
   }
 
+  def apply(cur: String): Currency = fromString(cur)
+
 }

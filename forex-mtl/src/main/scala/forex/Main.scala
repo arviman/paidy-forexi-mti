@@ -2,25 +2,39 @@ package forex
 
 import cats.effect._
 import forex.config._
-import fs2.Stream
+import forex.domain.Types.SharedStateIO
+import forex.domain.{Currency, Rate}
+import forex.services.{RateWriterService, RatesServices}
 import org.http4s.blaze.server.BlazeServerBuilder
 
-object Main extends IOApp.Simple {
-  override def run: IO[Unit] = new Application().stream().compile.drain
+object Main extends IOApp {
+  override def run(args: List[String]): IO[ExitCode] = {
+    new Application()
+      .startServer()
+  }
 }
 
 class Application {
+  val rateMapIO: SharedStateIO = Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
+  private val ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO)
 
-  def stream(): Stream[IO, Unit] =
+  def startServer(): IO[ExitCode] = {
+    val config = Config.getApplicationConfig("app")
+    val wait = IO.sleep(config.pollDuration)
     for {
-      config <- Config.stream("app")
-      module = new Module(config)
+      _ <- ( wait *>ratePoller.updateRates()).foreverM.start
+      _ <- IO(println("starting server"))
+      module = new Module(config, rateMapIO)
+      code <- BlazeServerBuilder[IO]
+        .bindHttp(config.http.port, config.http.host)
+        .withHttpApp(module.httpApp)
+        .serve
+        .compile
+        .drain
+        .as(ExitCode.Success)
 
-      _ <- BlazeServerBuilder[IO]
-            .bindHttp(config.http.port, config.http.host)
-            .withHttpApp(module.httpApp)
-            .serve
+    } yield (code)
 
-    } yield ()
+  }
 
 }

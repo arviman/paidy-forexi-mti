@@ -1,19 +1,15 @@
 package forex.services.rates.interpreters
 import cats.effect.{IO, Ref}
 import cats.data.Validated
+import forex.domain.Types.SharedStateIO
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.services.rates.RateService
 import forex.services.rates.errors.Error
 import forex.services.rates.errors.Error.CurrencyConversionFailed
 
-import scala.concurrent.duration.FiniteDuration
-/*import org.http4s.Method.GET
-import org.http4s.client._
-import org.http4s.client.dsl.io._
-import org.http4s.client.blaze._*/
 // stores all currencies in Currency -> uSD, can be extended later to use Pair as key
-class RateServiceImpl() extends RateService {
-  val rateMapIO: IO[Ref[IO, Map[Currency, Rate]]] = Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
+class RateServiceImpl(val rateMapIO: SharedStateIO) extends RateService {
+
 
   private def getOldestTime(tm1: Timestamp, tm2: Timestamp): Timestamp = {
     if(tm1.value.compareTo(tm2.value)>0)
@@ -29,17 +25,23 @@ class RateServiceImpl() extends RateService {
 
   }
 
-
   private def getRateForPairFromMap(pair: Rate.Pair, rateMap: Ref[IO, Map[Currency, Rate]]): IO[Option[Rate]] = {
 
-    def getRateFromMap(x: Map[Currency, Rate], currency: Currency): Option[Rate] = if (x.contains(currency)) Some(x(currency)) else None
+    def getRateFromMap(x: Map[Currency, Rate], currency: Currency): Option[Rate] =
+      {
+        println(s"map contains ${x.size} items")
+        for(items <- x)
+          println(items._1)
+        println(s"checking for $currency")
+        if (x.contains(currency)) Some(x(currency)) else None
+      }
 
     for {
       fromRate <- rateMap.get.map { getRateFromMap(_, pair.from) }
       toRate <- rateMap.get.map { getRateFromMap(_, pair.to) }
-    } yield(
-      (fromRate, toRate) match {
+    } yield (fromRate, toRate) match {
         case (Some(f), Some(t)) =>
+          println(s"${f.pair.from} ${f.pair.to} ${t.pair.from} ${t.pair.to}")
           if (pair.to == Currency.USD || pair.from == Currency.USD) {
             if (pair.to == Currency.USD)
               Some(f)
@@ -49,13 +51,23 @@ class RateServiceImpl() extends RateService {
           else { // non-usd to non-usd conversion
             Some(Rate(pair, calculateTransitivePrice(f.price, t.price) , getOldestTime(fromRate.get.timestamp, toRate.get.timestamp)))
           }
-        case _ => None
-      }    )
+        case (Some(_), None) =>
+          println("to is null")
+          None
+        case (None, Some(_)) =>
+          println("from is null")
+          None
+        case _ => {
+          println(s"both are null querying for ${pair.from} ${pair.to}")
+          None
+        }
+      }
 
   }
 
   override def get(pair: Rate.Pair):IO[Validated[Error, Option[Rate]]] =
     try {
+      println("getting rate")
       rateMapIO.flatMap(getRateForPairFromMap(pair, _))
         .map(r=>Validated.valid[Error, Option[Rate]](r))
     }
@@ -66,30 +78,4 @@ class RateServiceImpl() extends RateService {
         IO(Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage)))
     }
 
-
-  /*
-  private def fetchFromService() = {
-    import org.http4s.Uri.uri
-    import cats.effect.IO
-    import io.circe.generic.auto._
-    import fs2.Stream
-
-    // Decode the response
-    def fetch(name: String): Stream[IO, Hello] = {
-      // Encode a User request
-      // todo change from config
-      val req = GET(uri("http://localhost:8080/"), User(name).asJson)
-      // Create a client
-      BlazeClientBuilder[IO](ec).stream.flatMap { httpClient =>
-        // Decode a Hello response
-        Stream.eval(httpClient.expect(req)(jsonOf[IO, Hello]))
-      }
-    }
-  }
-
-   */
-
-
-
-  override def poll(duration: FiniteDuration): Unit = ???
 }
