@@ -8,8 +8,8 @@ import forex.programs._
 import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.middleware.{AutoSlash, Timeout}
-import forex.domain.Types.SharedStateIO
-class Module(config: ApplicationConfig, rateMapIO: SharedStateIO) {
+import forex.domain.Types.SharedState
+class Module(config: ApplicationConfig, rateMapIO: SharedState) {
 
   private val ratesService: RatesService = RatesServices.rateService(rateMapIO)
 

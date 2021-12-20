@@ -1,15 +1,14 @@
 package forex.services.rates.interpreters
 import cats.effect.{IO, Ref}
 import cats.data.Validated
-import forex.domain.Types.SharedStateIO
+import forex.domain.Types.SharedState
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.services.rates.RateService
 import forex.services.rates.errors.Error
 import forex.services.rates.errors.Error.CurrencyConversionFailed
 
 // stores all currencies in Currency -> uSD, can be extended later to use Pair as key
-class RateServiceImpl(val rateMapIO: SharedStateIO) extends RateService {
-
+class RateServiceImpl(val rateMap: SharedState) extends RateService {
 
   private def getOldestTime(tm1: Timestamp, tm2: Timestamp): Timestamp = {
     if(tm1.value.compareTo(tm2.value)>0)
@@ -68,7 +67,7 @@ class RateServiceImpl(val rateMapIO: SharedStateIO) extends RateService {
   override def get(pair: Rate.Pair):IO[Validated[Error, Option[Rate]]] =
     try {
       println("getting rate")
-      rateMapIO.flatMap(getRateForPairFromMap(pair, _))
+      getRateForPairFromMap(pair, rateMap)
         .map(r=>Validated.valid[Error, Option[Rate]](r))
     }
     catch {
