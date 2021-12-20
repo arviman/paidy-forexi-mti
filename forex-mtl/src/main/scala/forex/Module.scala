@@ -7,7 +7,7 @@ import forex.services._
 import forex.programs._
 import org.http4s._
 import org.http4s.implicits._
-import org.http4s.server.middleware.{AutoSlash, Timeout}
+import org.http4s.server.middleware.{ AutoSlash, Timeout }
 import forex.domain.Types.SharedState
 class Module(config: ApplicationConfig, rateMapIO: SharedState) {
 
