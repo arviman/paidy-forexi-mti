@@ -4,9 +4,10 @@ package rates
 import forex.domain.Currency.show
 import forex.domain.Rate.Pair
 import forex.domain._
+import forex.programs.oneFrameAPI.{OneFrameApiResponse, OneFrameApiResponseRow}
 import io.circe._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 object Protocol {
 
@@ -38,5 +39,10 @@ object Protocol {
 
   implicit val responseEncoder: Encoder[GetApiResponse] =
     deriveConfiguredEncoder[GetApiResponse]
+
+  implicit val oneFrameApiResponseRowDecoder: Decoder[OneFrameApiResponseRow] = deriveConfiguredDecoder[OneFrameApiResponseRow]
+  implicit val oneFrameApiResponseDecoder: Decoder[OneFrameApiResponse] = deriveConfiguredDecoder[OneFrameApiResponse]
+
+
 
 }

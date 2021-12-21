@@ -18,7 +18,7 @@ class Application {
     val wait   = IO.sleep(config.pollDuration)
     for {
       rateMapIO <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
-      ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO)
+      ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO, config.rateApi)
       _ <- (ratePoller.updateRates() <* wait).foreverM.start
       _ <- IO(println("starting server"))
       module = new Module(config, rateMapIO)
