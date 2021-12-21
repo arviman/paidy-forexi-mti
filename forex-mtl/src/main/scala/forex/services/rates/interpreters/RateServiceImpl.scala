@@ -58,6 +58,8 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
         case (Some(f), None) =>
           if (queryPair.to == Currency.USD && queryPair.from != Currency.USD) // xyzUSD
             Some(f)
+          else if(queryPair.to != Currency.USD && queryPair.from == Currency.USD)
+            Some(f.invertRate)
           else
             None
         case (None, Some(t)) =>
@@ -65,10 +67,9 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
             Some(t.invertRate) // t is abcUSD, so invert it
           else
             None
-        case _ => {
+        case _ =>
           println(s"both are null querying for ${pair.from} ${pair.to}")
           None
-        }
       }
 
   }
