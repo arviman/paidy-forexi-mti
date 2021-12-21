@@ -19,7 +19,7 @@ class Application {
     for {
       rateMapIO <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
       ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO)
-      _ <- (wait *> ratePoller.updateRates()).foreverM.start
+      _ <- (ratePoller.updateRates() <* wait).foreverM.start
       _ <- IO(println("starting server"))
       module = new Module(config, rateMapIO)
       code <- BlazeServerBuilder[IO]
