@@ -7,7 +7,6 @@ import forex.services.rates.{ RateClientProxy, RateWriter }
 
 class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter {
   override def updateRates(): IO[Unit] = {
-    println("setting cache")
     rateClientProxy.getRates().flatMap(setCache)
   }
 
@@ -23,16 +22,14 @@ class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) ext
         m + (t.pair.to -> t.invertRate)
       else if (t.pair.to == currencyUSD)
         m + (t.pair.from -> t)
-      else m // todo ignore cross pairs for now until we support Pair as key
+      else m
     }
   }
 
   def setCache(rates: List[Rate]): IO[Unit] = {
     val newMap = getMapFromRates(rates)
-    println(s"trying to set new map of size ${newMap.size} with ${rates.size}")
     rateMap
-      .getAndSet(newMap)
-      .map((x: Map[Currency, Rate]) => println(s"${x.size} previously existed"))
+      .set(newMap)
   }
 
 }

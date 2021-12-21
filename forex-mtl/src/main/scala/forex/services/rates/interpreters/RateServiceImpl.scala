@@ -22,10 +22,6 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
   private def getRateForPairFromMap(queryPair: Rate.Pair, rateMap: Ref[IO, Map[Currency, Rate]]): IO[Option[Rate]] = {
 
     def getRateFromMap(x: Map[Currency, Rate], currency: Currency): Option[Rate] = {
-      println(s"map contains ${x.size} items")
-      for (items <- x)
-        println(items._1)
-      println(s"checking for $currency")
       if (x.contains(currency)) Some(x(currency)) else None
     }
     def getInCurrencyToUSDForm(queryPair: Rate.Pair): Rate.Pair =
@@ -40,7 +36,6 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
     } yield
       (fromRate, toRate) match {
         case (Some(f), Some(t)) =>
-          println(s"${f.pair.from} ${f.pair.to} ${t.pair.from} ${t.pair.to}")
           if (pair.to == Currency.USD || pair.from == Currency.USD) {
             if (queryPair.to == Currency.USD) // xyzUSD
               Some(f)
@@ -68,7 +63,6 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
           else
             None
         case _ =>
-          println(s"both are null querying for ${pair.from} ${pair.to}")
           None
       }
 
@@ -76,7 +70,6 @@ class RateServiceImpl(val rateMap: SharedState) extends RateService {
 
   override def get(pair: Rate.Pair): IO[Validated[Error, Option[Rate]]] =
     try {
-      println("getting rate")
       getRateForPairFromMap(pair, rateMap)
         .map(r => Validated.valid[Error, Option[Rate]](r))
     } catch {

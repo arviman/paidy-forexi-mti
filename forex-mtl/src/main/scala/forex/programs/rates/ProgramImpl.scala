@@ -8,7 +8,6 @@ import forex.services.rates.errors
 
 class ProgramImpl(ratesService: RatesService) extends Program {
   def get(request: Protocol.GetRatesRequest): IO[Either[String, Option[Rate]]] = {
-    println("getting the request")
     ratesService.get(Rate.Pair(request.from, request.to)) map {
       case Valid(res) => Right(res)
       case Invalid(err: errors.Error) => Left(err.getClass.getSimpleName + " " + err.msg)
