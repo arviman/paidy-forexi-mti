@@ -2,9 +2,11 @@ package forex.services.rates
 
 object errors {
 
-  sealed trait Error
+  sealed abstract class Error (val msg: String)
+
   object Error {
-    final case class OneFrameLookupFailed(msg: String) extends Error
+    final case class OneFrameLookupFailed(override val msg: String) extends Error(msg)
+    final case class CurrencyConversionFailed(override val msg: String) extends Error(msg)
   }
 
 }

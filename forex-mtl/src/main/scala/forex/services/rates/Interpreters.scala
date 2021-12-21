@@ -1,8 +1,9 @@
 package forex.services.rates
-
-import cats.Applicative
+import forex.domain.Types.SharedState
 import interpreters._
 
 object Interpreters {
-  def dummy[F[_]: Applicative]: Algebra[F] = new OneFrameDummy[F]()
+  def rateClientProxy                                           = new RateClientProxyDummyImpl()
+  def rateService(sharedState: SharedState): RateService        = new RateServiceImpl(sharedState)
+  def ratePollerService(sharedStateIO: SharedState): RateWriter = new RateWriterImpl(rateClientProxy, sharedStateIO)
 }
