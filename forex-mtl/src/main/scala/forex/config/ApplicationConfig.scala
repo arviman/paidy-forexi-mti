@@ -8,7 +8,7 @@ case class ApplicationConfig(
     pollDuration: FiniteDuration
 )
 
-case class RateApiConfig(baseUri: String, port: Int, token: String)
+case class RateApiConfig(host: String, port: Int, token: String)
 
 case class HttpConfig(
     host: String,

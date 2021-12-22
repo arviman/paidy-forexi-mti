@@ -7,4 +7,6 @@ case class Timestamp(value: OffsetDateTime) extends AnyVal
 object Timestamp {
   def now: Timestamp =
     Timestamp(OffsetDateTime.now)
+
+  def apply(str: String): Timestamp = Timestamp(OffsetDateTime.parse(str))
 }

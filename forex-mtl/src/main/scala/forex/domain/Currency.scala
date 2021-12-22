@@ -45,7 +45,8 @@ object Currency {
   /**
    ** @return list of currencies other than USD
    */
-  def getListOfOtherCurrencies(): List[String] = List(
+  def getListOfCurrencies(): List[String] = List(
+    "USD",
     "AUD",
     "CAD",
     "CHF",
