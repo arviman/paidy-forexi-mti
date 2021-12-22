@@ -3,15 +3,22 @@ package forex
 import cats.effect._
 import forex.config._
 import forex.domain.{Currency, Rate}
-
 import forex.services.{RateWriterService, RatesServices}
-
 import org.http4s.blaze.server.BlazeServerBuilder
+import wvlet.log.Logger
+
+
 
 object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] =
+  def setLogConfig(): Unit = {
+    Logger.clearAllHandlers
+    Logger.setDefaultFormatter(ForexMtiLogFormatter)
+  }
+  override def run(args: List[String]): IO[ExitCode] = {
+    setLogConfig()
     new Application()
       .startServer()
+  }
 }
 
 class Application {

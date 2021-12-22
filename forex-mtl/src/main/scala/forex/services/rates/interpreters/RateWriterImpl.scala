@@ -2,10 +2,11 @@ package forex.services.rates.interpreters
 
 import cats.effect.IO
 import forex.domain.Types.SharedState
-import forex.domain.{ Currency, Rate }
-import forex.services.rates.{ RateClientProxy, RateWriter }
+import forex.domain.{Currency, Rate}
+import forex.services.rates.{RateClientProxy, RateWriter}
+import wvlet.log.LogSupport
 
-class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter {
+class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter with LogSupport {
   /**
    *
    * @return true if 1 or more rates have been added to cache, false if 0 rates were updated
@@ -33,6 +34,8 @@ class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) ext
 
   def setCache(rates: List[Rate]): IO[Boolean] = {
     val newMap = getMapFromRates(rates)
+    info(s"Got ${rates.size} pairs to be added to the cache")
+
     if(newMap.isEmpty)
       IO(false)
     else
