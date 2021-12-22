@@ -18,11 +18,11 @@ class Application {
   def startServer(): IO[ExitCode] = {
     val config = Config.getApplicationConfig("app")
     val wait   = IO.sleep(config.pollDuration)
-
+    val waitOnFailure   = IO.sleep(config.pollOnFailureDuration) // we want to retry sooner in case one-frame-api is down
     for {
       rateMapIO <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
       ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO, config.rateApi)
-      _ <- (ratePoller.updateRates() <* wait).foreverM.start
+      _ <- (ratePoller.updateRates().flatMap(pollRes => if(pollRes) wait else waitOnFailure)).foreverM.start
       _ <- IO.println("starting server")
       module = new Module(config, rateMapIO)
       code <- BlazeServerBuilder[IO]

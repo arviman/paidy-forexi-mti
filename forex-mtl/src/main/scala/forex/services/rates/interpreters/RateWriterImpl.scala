@@ -6,7 +6,12 @@ import forex.domain.{ Currency, Rate }
 import forex.services.rates.{ RateClientProxy, RateWriter }
 
 class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter {
-  override def updateRates(): IO[Unit] = {
+  /**
+   *
+   * @return true if 1 or more rates have been added to cache, false if 0 rates were updated
+   */
+
+  override def updateRates(): IO[Boolean] = {
     rateClientProxy.getRates().flatMap(setCache)
   }
 
@@ -26,10 +31,12 @@ class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) ext
     }
   }
 
-  def setCache(rates: List[Rate]): IO[Unit] = {
+  def setCache(rates: List[Rate]): IO[Boolean] = {
     val newMap = getMapFromRates(rates)
-    rateMap
-      .set(newMap)
+    if(newMap.isEmpty)
+      IO(false)
+    else
+      rateMap.set(newMap) >> rateMap.get.map(_.nonEmpty)
   }
 
 }
