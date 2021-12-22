@@ -5,6 +5,7 @@ import cats.Show
 sealed trait Currency
 
 object Currency {
+
   case object AUD extends Currency
   case object CAD extends Currency
   case object CHF extends Currency
@@ -41,4 +42,18 @@ object Currency {
 
   def apply(cur: String): Currency = fromString(cur)
 
+  /**
+   ** @return list of currencies other than USD
+   */
+  def getListOfCurrencies(): List[String] = List(
+    "USD",
+    "AUD",
+    "CAD",
+    "CHF",
+    "EUR",
+    "GBP",
+    "NZD",
+    "JPY",
+    "SGD",
+  )
 }

@@ -14,6 +14,7 @@ class RatesHttpRoutes(rateProgram: RatesProgram) extends Http4sDsl[IO] {
 
   private[http] val prefixPath = "/rates"
 
+  // this is the end of the world in this context -> F[Response[F]]
   private val httpRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root :? FromQueryParam(from) +& ToQueryParam(to) =>
       rateProgram.get(RatesProgramProtocol.GetRatesRequest(from, to)).flatMap {
