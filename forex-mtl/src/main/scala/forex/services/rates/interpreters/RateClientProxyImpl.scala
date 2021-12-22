@@ -11,10 +11,11 @@ import org.http4s.client.{Client, JavaNetClientBuilder}
 import forex.http.rates.Protocol._
 import forex.programs.oneFrameAPI.OneFrameApiResponseRow
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
+import wvlet.log.LogSupport
 
 import scala.util.{Failure, Success, Try}
 
-class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy {
+class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy with LogSupport {
   lazy val ratesUrl = Url
     .parse(s"http://${config.host}:${config.port}/rates")
     .addParams(Currency.getListOfCurrencies().filterNot(_.equals("USD")).map(curr => "pair" -> (curr + "USD")))
@@ -34,15 +35,17 @@ class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy {
     * @return an exception
     */
   def fetchResponse: IO[List[OneFrameApiResponseRow]] = {
-    println("fetching response from " + ratesUrl.toString)
+    info("fetching response from " + ratesUrl.toString)
     Try(
       Uri.fromString(ratesUrl.toString)
         .map(uri =>
           JavaNetClientBuilder[IO].resource.use { // Create a client
               httpClient: Client[IO] =>
                 httpClient.expectOr[List[OneFrameApiResponseRow]](Request[IO](GET, uri, HttpVersion.`HTTP/1.1`, Headers(("token") -> config.token)))(
-                  err =>
-                    IO.println(s"Error while getting response from rate API: ${err.status}") *> IO(new RuntimeException)
+                  err => {
+                    error(s"Error while getting response from rate API: ${err.status}")
+                    IO(new RuntimeException)
+                  }
                 )
           }
         )
@@ -50,14 +53,17 @@ class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy {
       case Success(value) =>
         value match {
           case Left(_) => {
-            println("Error creating Uri")
+            error("Error creating Uri")
             IO(List[OneFrameApiResponseRow]())
           }
           case Right(res) => {
             res
           }
         }
-      case Failure(_) => IO(List[OneFrameApiResponseRow]())
+      case Failure(err) => {
+        error(err.getMessage)
+        IO(List[OneFrameApiResponseRow]())
+      }
     }
   }
 

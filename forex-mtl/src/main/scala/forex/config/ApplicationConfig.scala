@@ -5,7 +5,8 @@ import scala.concurrent.duration.FiniteDuration
 case class ApplicationConfig(
     http: HttpConfig,
     rateApi: RateApiConfig,
-    pollDuration: FiniteDuration
+    pollDuration: FiniteDuration,
+    pollOnFailureDuration: FiniteDuration
 )
 
 case class RateApiConfig(host: String, port: Int, token: String)

@@ -1,3 +1,4 @@
+import Dependencies.Versions
 import sbt._
 
 object Dependencies {
@@ -12,7 +13,8 @@ object Dependencies {
     val scalaUri            = "4.0.0-M3"
 
     val kindProjector       = "0.10.3"
-    val logback             = "1.2.9"
+    val slf4j               = "1.7.32"
+    val airframe            = "21.12.1"
     val scalaCheck          = "1.15.4"
     val scalaTest           = "3.2.10"
     val catsScalaCheck      = "0.3.1"
@@ -38,12 +40,13 @@ object Dependencies {
     lazy val pureConfig          = "com.github.pureconfig" %% "pureconfig"                 % Versions.pureConfig
     lazy val scalaUri            = "io.lemonlabs"          %% "scala-uri"                  % Versions.scalaUri
 
-
     // Compiler plugins
     lazy val kindProjector       = "org.typelevel"         %% "kind-projector"             % Versions.kindProjector
 
     // Runtime
-    lazy val logback             = "ch.qos.logback"        %  "logback-classic"            % Versions.logback
+    lazy val slf4jApi            = "org.slf4j"             % "slf4j-api"                   % Versions.slf4j
+    lazy val slf4j               = "org.slf4j"             % "slf4j-simple"                % Versions.slf4j
+    lazy val airframe            =  "org.wvlet.airframe"   %% "airframe-log"               % Versions.airframe
 
     // Test
     lazy val scalaTest           = "org.scalatest"         %% "scalatest"                  % Versions.scalaTest
