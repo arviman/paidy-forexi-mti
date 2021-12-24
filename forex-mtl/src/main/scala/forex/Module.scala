@@ -1,32 +1,32 @@
 package forex
 
-import cats.effect.Temporal
+import cats.effect.IO
 import forex.config.ApplicationConfig
 import forex.http.rates.RatesHttpRoutes
 import forex.services._
 import forex.programs._
 import org.http4s._
-import org.http4s.server.middleware.{AutoSlash, Timeout}
+import org.http4s.implicits._
+import org.http4s.server.middleware.{ AutoSlash, Timeout }
 import forex.domain.Types.SharedState
-class Module[F[_]](config: ApplicationConfig, rateMapIO: SharedState[F])
-                                    (implicit T: Temporal[F]) {
+class Module(config: ApplicationConfig, rateMapIO: SharedState) {
 
-  private val ratesService: RatesService[F] = RatesServices.rateService[F](rateMapIO)
+  private val ratesService: RatesService = RatesServices.rateService(rateMapIO)
 
-  private val ratesProgram: RatesProgram[F] = RatesProgram[F](ratesService)
+  private val ratesProgram: RatesProgram = RatesProgram(ratesService)
 
-  private val ratesHttpRoutes: HttpRoutes[F] = new RatesHttpRoutes(ratesProgram).routes
+  private val ratesHttpRoutes: HttpRoutes[IO] = new RatesHttpRoutes(ratesProgram).routes
 
-  private val routesMiddleware: HttpRoutes[F] => HttpRoutes[F] = { http: HttpRoutes[F] =>
+  private val routesMiddleware: HttpRoutes[IO] => HttpRoutes[IO] = { http: HttpRoutes[IO] =>
     AutoSlash(http)
   }
 
-  private val appMiddleware: HttpApp[F] => HttpApp[F] = { http: HttpApp[F] =>
+  private val appMiddleware: HttpApp[IO] => HttpApp[IO] = { http: HttpApp[IO] =>
     Timeout(config.http.timeout)(http)
   }
 
-  private val http: HttpRoutes[F] = ratesHttpRoutes
+  private val http: HttpRoutes[IO] = ratesHttpRoutes
 
-  val httpApp: HttpApp[F] = appMiddleware(routesMiddleware(http).orNotFound)
+  val httpApp: HttpApp[IO] = appMiddleware(routesMiddleware(http).orNotFound)
 
 }

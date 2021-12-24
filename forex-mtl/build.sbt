@@ -73,5 +73,4 @@ libraryDependencies ++= Seq(
   Libraries.catsEffectTest   % Test
 
 )
-addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0")
 addCommandAlias("make-idea", ";updateClassifiers; updateSbtClassifiers;")

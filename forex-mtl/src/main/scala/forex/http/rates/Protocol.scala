@@ -1,11 +1,12 @@
-package forex.http.rates
+package forex.http
+package rates
 
 import forex.domain.Currency.show
 import forex.domain.Rate.Pair
 import forex.domain._
+import forex.programs.oneFrameAPI.OneFrameApiResponseRow
 import io.circe._
 import io.circe.generic.extras.Configuration
-import forex.domain.oneFrameAPI.OneFrameApiResponseRow
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 object Protocol {
@@ -27,8 +28,6 @@ object Protocol {
   implicit val currencyEncoder: Encoder[Currency] =
     Encoder.instance[Currency] { show.show _ andThen Json.fromString }
 
-  implicit val currencyDecoder: Decoder[Currency] = deriveConfiguredDecoder[Currency]
-
   implicit val priceEncoder: Encoder[Price] =
     Encoder.encodeString.contramap[Price](x=>x.value.setScale(5, BigDecimal.RoundingMode.UP).toString())
 
@@ -43,11 +42,8 @@ object Protocol {
 
   implicit val encodeTimestamp: Encoder.AsObject[Timestamp] = deriveConfiguredEncoder[Timestamp]
 
-
   implicit val oneFrameApiResponseRowDecoder: Decoder[OneFrameApiResponseRow] = deriveConfiguredDecoder[OneFrameApiResponseRow]
-
-  type OneFrameApiResponse = List[OneFrameApiResponseRow]
-  implicit val OneFrameResponseDecoder = Decoder[OneFrameApiResponse].prepare(_.root)
+  implicit val listOneFrameRowDecoder = Decoder[List[OneFrameApiResponseRow]].prepare(_.root)
 
   implicit val oneFrameApiResponseRowEncode: Encoder.AsObject[OneFrameApiResponseRow] = deriveConfiguredEncoder[OneFrameApiResponseRow]
 

@@ -1,15 +1,13 @@
 package forex.services.rates.interpreters
-import cats.Monad
-import cats.effect.Ref
+import cats.effect.{ IO, Ref }
 import cats.data.Validated
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
 import forex.domain.Types.SharedState
-import forex.domain.{Currency, Price, Rate, Timestamp}
+import forex.domain.{ Currency, Price, Rate, Timestamp }
 import forex.services.rates.RateService
 import forex.services.rates.errors.Error
 import forex.services.rates.errors.Error.CurrencyConversionFailed
 
-class RateServiceImpl[F[_] : Monad](val rateMap: SharedState[F]) extends RateService[F] {
+class RateServiceImpl(val rateMap: SharedState) extends RateService {
 
   private def getOldestTime(tm1: Timestamp, tm2: Timestamp): Timestamp =
     if (tm1.value.compareTo(tm2.value) > 0)
@@ -21,7 +19,7 @@ class RateServiceImpl[F[_] : Monad](val rateMap: SharedState[F]) extends RateSer
     // if 1 AED is 2 USD, and 1 USD is 5 SGD, then SGD-> USD is 0.2 and USD->SGD=5 (inverse value),so 1 AED = 2 * (5) SGD
     Price(fromPrice.value * toPrice.invertValue.value)
 
-  private def getRateForPairFromMap(queryPair: Rate.Pair, rateMap: Ref[F, Map[Currency, Rate]]): F[Option[Rate]] = {
+  private def getRateForPairFromMap(queryPair: Rate.Pair, rateMap: Ref[IO, Map[Currency, Rate]]): IO[Option[Rate]] = {
 
     def getRateFromMap(x: Map[Currency, Rate], currency: Currency): Option[Rate] = {
       if (x.contains(currency)) Some(x(currency)) else None
@@ -32,10 +30,10 @@ class RateServiceImpl[F[_] : Monad](val rateMap: SharedState[F]) extends RateSer
       else queryPair
     val pair: Rate.Pair = getInCurrencyToUSDForm(queryPair)
 
-    val frr: F[Option[Rate]] = rateMap.get.map { getRateFromMap(_, pair.from) }
-    val trr: F[Option[Rate]] = rateMap.get.map { getRateFromMap(_, pair.to) }
-
-    frr flatMap (fromRate => trr map(toRate =>
+    for {
+      fromRate <- rateMap.get.map { getRateFromMap(_, pair.from) }
+      toRate <- rateMap.get.map { getRateFromMap(_, pair.to) }
+    } yield
       (fromRate, toRate) match {
         case (Some(f), Some(t)) =>
           if (pair.to == Currency.USD || pair.from == Currency.USD) {
@@ -66,19 +64,19 @@ class RateServiceImpl[F[_] : Monad](val rateMap: SharedState[F]) extends RateSer
             None
         case _ =>
           None
-      }))
+      }
 
   }
 
-  override def get(pair: Rate.Pair): F[Validated[Error, Option[Rate]]] =
+  override def get(pair: Rate.Pair): IO[Validated[Error, Option[Rate]]] =
     try {
       getRateForPairFromMap(pair, rateMap)
         .map(r => Validated.valid[Error, Option[Rate]](r))
     } catch {
       case _: ArithmeticException =>
-        (Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("Divide by zero Error"))).pure[F]
+        IO(Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("Divide by zero Error")))
       case ex: Throwable =>
-        (Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage))).pure[F]
+        IO(Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage)))
     }
 
 }

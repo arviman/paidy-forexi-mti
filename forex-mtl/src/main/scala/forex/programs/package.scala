@@ -1,6 +1,6 @@
 package forex
 
 package object programs {
-  type RatesProgram[F[_]] = rates.Program[F]
+  type RatesProgram = rates.Program
   final val RatesProgram = rates.ProgramImpl
 }

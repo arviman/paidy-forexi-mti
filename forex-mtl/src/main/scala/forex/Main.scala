@@ -1,12 +1,13 @@
 package forex
 
-import cats.implicits.{catsSyntaxFlatMapOps, toFlatMapOps, toFunctorOps}
 import cats.effect._
-import cats.effect.implicits.genSpawnOps
 import forex.config._
 import forex.domain.{Currency, Rate}
 import forex.services.{RateWriterService, RatesServices}
-import wvlet.log.{LogSupport, Logger}
+import org.http4s.blaze.server.BlazeServerBuilder
+import wvlet.log.Logger
+
+
 
 object Main extends IOApp {
   def setLogConfig(): Unit = {
@@ -15,24 +16,23 @@ object Main extends IOApp {
   }
   override def run(args: List[String]): IO[ExitCode] = {
     setLogConfig()
-    new Application[IO]()
+    new Application()
       .startServer()
   }
 }
 
-class Application[F[_]](implicit A:Async[F]) extends LogSupport{
-  def startServer(): F[ExitCode] = {
+class Application {
+  def startServer(): IO[ExitCode] = {
     val config = Config.getApplicationConfig("app")
-    val wait: F[Unit] = Temporal[F].sleep(config.pollDuration)
-    val waitOnFailure: F[Unit] = Temporal[F].sleep(config.pollOnFailureDuration) // we want to retry sooner in case one-frame-api is down
-
+    val wait   = IO.sleep(config.pollDuration)
+    val waitOnFailure   = IO.sleep(config.pollOnFailureDuration) // we want to retry sooner in case one-frame-api is down
     for {
-      rateMap <- Ref.of[F, Map[Currency, Rate]](Map[Currency, Rate]())
-      ratePoller: RateWriterService[F] = RatesServices.ratePollerService[F](rateMap, config.rateApi)
-      _: Fiber[F, Throwable, Unit] = ratePoller.updateRates.map(res => if(res) wait else waitOnFailure).foreverM.start
-      _ = info("starting server")
-      module = new Module(config, rateMap)
-      code <- org.http4s.blaze.server.BlazeServerBuilder[F]
+      rateMapIO <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
+      ratePoller: RateWriterService = RatesServices.ratePollerService(rateMapIO, config.rateApi)
+      _ <- (ratePoller.updateRates().flatMap(pollRes => if(pollRes) wait else waitOnFailure)).foreverM.start
+      _ <- IO.println("starting server")
+      module = new Module(config, rateMapIO)
+      code <- BlazeServerBuilder[IO]
                .bindHttp(config.http.port, config.http.host)
                .withHttpApp(module.httpApp)
                .serve
