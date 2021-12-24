@@ -1,25 +1,26 @@
 package forex.services.rates.interpreters
 
-import cats.effect.IO
+import cats.effect.Async
+import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps}
 import forex.config.RateApiConfig
+import forex.domain.oneFrameAPI.OneFrameApiResponseRow
 import forex.services.rates.RateClientProxy
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import org.http4s.Method.GET
 import io.lemonlabs.uri.Url
-import org.http4s.{Headers, HttpVersion, Request, Uri}
+import org.http4s.circe.jsonOf
+import org.http4s.{EntityDecoder, Headers, HttpVersion, Request, Uri}
 import org.http4s.client.{Client, JavaNetClientBuilder}
-import forex.http.rates.Protocol._
-import forex.programs.oneFrameAPI.OneFrameApiResponseRow
-import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 import wvlet.log.LogSupport
 
 import scala.util.{Failure, Success, Try}
 
-class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy with LogSupport {
+class RateClientProxyImpl[A[_] : Async](config: RateApiConfig) extends RateClientProxy[A] with LogSupport {
+  type OneFrameApiResponse = List[OneFrameApiResponseRow]
   lazy val ratesUrl = Url
     .parse(s"http://${config.host}:${config.port}/rates")
     .addParams(Currency.getListOfCurrencies().filterNot(_.equals("USD")).map(curr => "pair" -> (curr + "USD")))
-  override def getRates(): IO[List[Rate]] =
+  override def getRates: A[List[Rate]] = {
     fetchResponse.map(
       _.map(
         item =>
@@ -30,21 +31,26 @@ class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy with Lo
         )
       ).toList
     )
+  }
+
 
   /** Decode the response
     * @return an exception
     */
-  def fetchResponse: IO[List[OneFrameApiResponseRow]] = {
+  def fetchResponse: A[OneFrameApiResponse] = {
     info("fetching response from " + ratesUrl.toString)
+    import forex.http.rates.Protocol.OneFrameResponseDecoder
+    implicit val signUpRequestDec: EntityDecoder[A, OneFrameApiResponse] = jsonOf
+
     Try(
       Uri.fromString(ratesUrl.toString)
         .map(uri =>
-          JavaNetClientBuilder[IO].resource.use { // Create a client
-              httpClient: Client[IO] =>
-                httpClient.expectOr[List[OneFrameApiResponseRow]](Request[IO](GET, uri, HttpVersion.`HTTP/1.1`, Headers(("token") -> config.token)))(
+          JavaNetClientBuilder[A].resource.use { // Create a client
+              httpClient: Client[A] =>
+                httpClient.expectOr[List[OneFrameApiResponseRow]](Request[A](GET, uri, HttpVersion.`HTTP/1.1`, Headers(("token") -> config.token)))(
                   err => {
                     error(s"Error while getting response from rate API: ${err.status}")
-                    IO(new RuntimeException)
+                    (new Throwable).pure[A]
                   }
                 )
           }
@@ -54,7 +60,7 @@ class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy with Lo
         value match {
           case Left(_) => {
             error("Error creating Uri")
-            IO(List[OneFrameApiResponseRow]())
+            (List[OneFrameApiResponseRow]()).pure[A]
           }
           case Right(res) => {
             res
@@ -62,7 +68,7 @@ class RateClientProxyImpl(config: RateApiConfig) extends RateClientProxy with Lo
         }
       case Failure(err) => {
         error(err.getMessage)
-        IO(List[OneFrameApiResponseRow]())
+        (List[OneFrameApiResponseRow]()).pure[A]
       }
     }
   }

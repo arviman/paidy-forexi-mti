@@ -1,10 +1,13 @@
 package forex.services.rates
+import cats.Monad
+import cats.effect.Async
 import forex.config.RateApiConfig
 import forex.domain.Types.SharedState
 import interpreters._
 
 object Interpreters {
-  def rateClientProxy(config: RateApiConfig)                = new RateClientProxyImpl(config)
-  def rateService(sharedState: SharedState): RateService        = new RateServiceImpl(sharedState)
-  def ratePollerService(sharedStateIO: SharedState, config: RateApiConfig): RateWriter = new RateWriterImpl(rateClientProxy(config), sharedStateIO)
+  def rateClientProxy[F[_] : Async](config: RateApiConfig) = new RateClientProxyImpl[F](config)
+  def rateService[G[_] : Monad](sharedState: SharedState[G]): RateService[G] = new RateServiceImpl[G](sharedState)
+  def ratePollerService[F[_] : Async](sharedStateIO: SharedState[F], config: RateApiConfig): RateWriter[F] =
+    new RateWriterImpl[F](rateClientProxy[F](config), sharedStateIO)
 }

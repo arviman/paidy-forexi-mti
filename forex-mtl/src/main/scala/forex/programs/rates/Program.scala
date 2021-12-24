@@ -1,8 +1,7 @@
 package forex.programs.rates
 
-import cats.effect.IO
 import forex.domain.Rate
 
-trait Program {
-  def get(request: Protocol.GetRatesRequest): IO[String Either Option[Rate]]
+trait Program[F[_]] {
+  def get(request: Protocol.GetRatesRequest): F[String Either Option[Rate]]
 }

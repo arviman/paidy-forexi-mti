@@ -1,19 +1,23 @@
 package forex.services.rates.interpreters
 
-import cats.effect.IO
+import cats.effect.Async
+import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
 import forex.domain.Types.SharedState
 import forex.domain.{Currency, Rate}
 import forex.services.rates.{RateClientProxy, RateWriter}
 import wvlet.log.LogSupport
 
-class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter with LogSupport {
+// rateclientproxy needs G:Async, while this needs a monad, so let's sandwich F and G into F
+class RateWriterImpl[A[_]:Async](rateClientProxy: RateClientProxy[A], rateMap: SharedState[A]) extends RateWriter[A] with LogSupport {
   /**
    *
    * @return true if 1 or more rates have been added to cache, false if 0 rates were updated
    */
 
-  override def updateRates(): IO[Boolean] = {
-    rateClientProxy.getRates().flatMap(setCache)
+  override def updateRates: A[Boolean] = {
+    val aToFb: List[Rate] => A[Boolean] = setCache
+    val rates: A[List[Rate]] = rateClientProxy.getRates
+    rates.flatMap(aToFb(_))
   }
 
   /**
@@ -32,14 +36,17 @@ class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) ext
     }
   }
 
-  def setCache(rates: List[Rate]): IO[Boolean] = {
+  def setCache(rates: List[Rate]): A[Boolean] = {
     val newMap = getMapFromRates(rates)
     info(s"Got ${rates.size} pairs to be added to the cache")
 
     if(newMap.isEmpty)
-      IO(false)
-    else
-      rateMap.set(newMap) >> rateMap.get.map(_.nonEmpty)
+      false.pure[A]
+    else {
+      rateMap.set(newMap)
+      rateMap.get.fmap(_.nonEmpty)
+    }
+
   }
 
 }
