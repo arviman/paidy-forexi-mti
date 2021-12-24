@@ -8,11 +8,11 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class RateWriterImplTest extends AnyFunSuite {
   test("get map of returned 3 returns map of size 3") {
-    val rateClientProxy = new RateClientProxyForTest
+    val rateClientProxy = new RateClientProxyForTest[IO]
 
     val res: IO[(Int, Int)] = for {
       rateMap <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
-      rates <- rateClientProxy.getRates()
+      rates <- rateClientProxy.getRates
       p = new RateWriterImpl(rateClientProxy, rateMap)
       m = p.getMapFromRates(rates)
     } yield (m.size, rates.size)

@@ -5,7 +5,7 @@ import cats.effect._
 import cats.effect.implicits.genSpawnOps
 import forex.config._
 import forex.domain.{Currency, Rate}
-import forex.services.{RateWriterService, RatesServices}
+import forex.services.RatesServices
 import wvlet.log.{LogSupport, Logger}
 
 object Main extends IOApp {
@@ -28,10 +28,10 @@ class Application[F[_]](implicit A:Async[F]) extends LogSupport{
 
     for {
       rateMap <- Ref.of[F, Map[Currency, Rate]](Map[Currency, Rate]())
-      ratePoller: RateWriterService[F] = RatesServices.ratePollerService[F](rateMap, config.rateApi)
-      _: Fiber[F, Throwable, Unit] = ratePoller.updateRates.map(res => if(res) wait else waitOnFailure).foreverM.start
       _ = info("starting server")
-      module = new Module(config, rateMap)
+      _ = (RatesServices.ratePollerService[F](rateMap, config.rateApi)
+        .updateRates.map(res => if(res) wait else waitOnFailure)).foreverM.start
+      module: Module[F] = new Module[F](config, rateMap)
       code <- org.http4s.blaze.server.BlazeServerBuilder[F]
                .bindHttp(config.http.port, config.http.host)
                .withHttpApp(module.httpApp)

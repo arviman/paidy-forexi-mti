@@ -76,9 +76,9 @@ class RateServiceImpl[F[_] : Monad](val rateMap: SharedState[F]) extends RateSer
         .map(r => Validated.valid[Error, Option[Rate]](r))
     } catch {
       case _: ArithmeticException =>
-        (Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("Divide by zero Error"))).pure[F]
+        Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("Divide by zero Error")).pure[F]
       case ex: Throwable =>
-        (Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage))).pure[F]
+        Validated.invalid[Error, Option[Rate]](CurrencyConversionFailed("An exception occurred: " + ex.getMessage)).pure[F]
     }
 
 }

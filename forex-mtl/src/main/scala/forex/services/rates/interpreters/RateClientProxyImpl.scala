@@ -8,6 +8,7 @@ import forex.services.rates.RateClientProxy
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import org.http4s.Method.GET
 import io.lemonlabs.uri.Url
+//import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.circe.jsonOf
 import org.http4s.{EntityDecoder, Headers, HttpVersion, Request, Uri}
 import org.http4s.client.{Client, JavaNetClientBuilder}
@@ -25,7 +26,7 @@ class RateClientProxyImpl[A[_] : Async](config: RateApiConfig) extends RateClien
       _.map(
         item =>
           Rate(
-            pair = Rate.Pair(item.from, item.to),
+            pair = Rate.Pair(Currency(item.from), Currency(item.to)),
             price = Price(item.price),
             timestamp = Timestamp(item.time_stamp)
         )
@@ -39,8 +40,10 @@ class RateClientProxyImpl[A[_] : Async](config: RateApiConfig) extends RateClien
     */
   def fetchResponse: A[OneFrameApiResponse] = {
     info("fetching response from " + ratesUrl.toString)
+    //import forex.http.rates.Protocol.currencyDecoder
     import forex.http.rates.Protocol.OneFrameResponseDecoder
-    implicit val signUpRequestDec: EntityDecoder[A, OneFrameApiResponse] = jsonOf
+    //implicit val currencyDec: EntityDecoder[A, Currency] = jsonOf
+    implicit val oneFrameResponseDec: EntityDecoder[A, OneFrameApiResponse] = jsonOf
 
     Try(
       Uri.fromString(ratesUrl.toString)
@@ -63,6 +66,7 @@ class RateClientProxyImpl[A[_] : Async](config: RateApiConfig) extends RateClien
             (List[OneFrameApiResponseRow]()).pure[A]
           }
           case Right(res) => {
+            res.map(x => info(s"Returning response from API ${x.size}"))
             res
           }
         }

@@ -13,7 +13,7 @@ class RateServiceImplTest extends AnyFunSuite {
 
   test("set cache and test that reading the cache works") {
 
-    val rateClientProxy = new RateClientProxyForTest
+    val rateClientProxy = new RateClientProxyForTest[IO]
     val pair1           = Rate.Pair(Currency("JPY"), Currency("USD"))
     val pair2           = Rate.Pair(Currency("USD"), Currency("JPY"))
 
@@ -21,7 +21,7 @@ class RateServiceImplTest extends AnyFunSuite {
       // init
       rateMap <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
       rateService = new RateServiceImpl(rateMap)
-      rates <- rateClientProxy.getRates()
+      rates <- rateClientProxy.getRates
       rateWriter = new RateWriterImpl(rateClientProxy, rateMap)
       _ <- rateWriter.setCache(rates)
       //act
@@ -41,7 +41,7 @@ class RateServiceImplTest extends AnyFunSuite {
 
   test("set cache and test cross pair") {
 
-    val rateClientProxy = new RateClientProxyForTest
+    val rateClientProxy = new RateClientProxyForTest[IO]
     val pair1           = Rate.Pair(Currency("JPY"), Currency("SGD"))
     val pair2           = Rate.Pair(Currency("SGD"), Currency("JPY"))
 
@@ -49,7 +49,7 @@ class RateServiceImplTest extends AnyFunSuite {
       // init
       rateMap <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
       rateService = new RateServiceImpl(rateMap)
-      rates <- rateClientProxy.getRates()
+      rates <- rateClientProxy.getRates
       rateWriter = new RateWriterImpl(rateClientProxy, rateMap)
       _ <- rateWriter.setCache(rates)
       //act
