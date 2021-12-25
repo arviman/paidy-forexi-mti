@@ -18,14 +18,17 @@ The design contains the following classes:
 * RateService (reads the rates from the shared memory and returns to our API)
 * SharedState (a map that contains the latest set of forex rates)
 
-### How to run
+### How to build and run
 
-Pull the code to your local. Use `sbt compile` to compile.
-Use `sbt test` to run unit tests
+Pull the code to your local machine where you have the OneFrameAPI docker image running (or exposed through a network). Have SBT 1.5 or above installed in your local. 
+
+(optional) Change the application.conf's host to point to the One Frame API if needed.
 
 Run the docker image of paidy-one-frame service using `docker run -p 8080:8080 paidyinc/one-frame`
+
+Use `sbt test` to run unit tests.
 Use `sbt run` to run the project. This will start the server on port 8081.
-You can make a GET request to http://0.0.0.0:8081/rates?from=GBP&to=SGD to fetch the rate.
+To test the proxy service is running, you can make a GET request to http://0.0.0.0:8081/rates?from=GBP&to=SGD to fetch the rate.
 
 **Ambiguities** - if external API is down, what do we do with the result? Do we return the stale (> 5 min) results?
 Do we return not found? Perhaps it makes more sense to send the forex rate with the timestamp so we delegate this choice to the consumer.
