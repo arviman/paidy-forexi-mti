@@ -1,19 +1,24 @@
 package forex.services.rates.interpreters
 
-import cats.effect.IO
+import cats.Monad
+import cats.implicits.{ toFlatMapOps, toFunctorOps }
 import forex.domain.Types.SharedState
-import forex.domain.{Currency, Rate}
-import forex.services.rates.{RateClientProxy, RateWriter}
+import forex.domain.{ Currency, Rate }
+import forex.services.rates.{ RateClientProxy, RateWriter }
 import wvlet.log.LogSupport
 
-class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) extends RateWriter with LogSupport {
-  /**
-   *
-   * @return true if 1 or more rates have been added to cache, false if 0 rates were updated
-   */
+// rateclientproxy needs G:Async, while this needs a monad, so let's sandwich F and G into F
+class RateWriterImpl[A[_]: Monad](rateClientProxy: RateClientProxy[A], rateMap: SharedState[A])
+    extends RateWriter[A]
+    with LogSupport {
 
-  override def updateRates(): IO[Boolean] = {
-    rateClientProxy.getRates().flatMap(setCache)
+  /**
+    * An effectful function that updates the latest rate into the shared memory
+    * @return true if 1 or more rates have been added to cache, false if 0 rates were updated
+    */
+  override def updateRates: A[Boolean] = {
+    debug("updating rates")
+    rateClientProxy.getRates.flatMap(rates => setRates(rates))
   }
 
   /**
@@ -32,14 +37,18 @@ class RateWriterImpl(rateClientProxy: RateClientProxy, rateMap: SharedState) ext
     }
   }
 
-  def setCache(rates: List[Rate]): IO[Boolean] = {
+  /**
+    * An effectful function that sets the provided rates into the shared memory
+    * @param rates
+    * @return
+    */
+  def setRates(rates: List[Rate]): A[Boolean] = {
+    debug(s"setting ${rates.size} rates")
     val newMap = getMapFromRates(rates)
-    info(s"Got ${rates.size} pairs to be added to the cache")
-
-    if(newMap.isEmpty)
-      IO(false)
-    else
-      rateMap.set(newMap) >> rateMap.get.map(_.nonEmpty)
+    for {
+      oldMap <- rateMap.getAndUpdate(_ => newMap)
+      _ = debug(s"old map had ${oldMap.size}")
+    } yield newMap.nonEmpty
   }
 
 }

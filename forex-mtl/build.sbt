@@ -57,6 +57,7 @@ libraryDependencies ++= Seq(
   Libraries.http4sDsl,
   Libraries.http4sServer,
   Libraries.http4sClient,
+  Libraries.http4sJdkClient,
   Libraries.http4sCirce,
   Libraries.circeCore,
   Libraries.circeGeneric,
@@ -73,4 +74,5 @@ libraryDependencies ++= Seq(
   Libraries.catsEffectTest   % Test
 
 )
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0")
 addCommandAlias("make-idea", ";updateClassifiers; updateSbtClassifiers;")

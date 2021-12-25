@@ -1,15 +1,15 @@
 package forex.services.rates.interpreters
 
-import cats.effect.IO
-import forex.domain.{ Currency, Price, Rate, Timestamp }
+import cats.Applicative
+import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.services.rates.RateClientProxy
 
 import java.time.OffsetDateTime
 import scala.util.Random
 
-class RateClientProxyForTest extends RateClientProxy {
-  override def getRates(): IO[List[Rate]] =
-    IO(
+class RateClientProxyForTest[F[_]] (implicit A: Applicative[F]) extends RateClientProxy[F] {
+  override def getRates: F[List[Rate]] =
+    A.pure(
       List(
         Rate(
           pair = Rate.Pair(Currency("USD"), Currency("JPY")),

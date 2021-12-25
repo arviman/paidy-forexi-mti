@@ -6,10 +6,9 @@ import pureconfig.generic.auto._
 object Config {
 
   /**
-   * @param path the property path inside the default configuration
-   */
-  def getApplicationConfig(path: String): ApplicationConfig = {
+    * @param path the property path inside the default configuration
+    */
+  def getApplicationConfig(path: String): ApplicationConfig =
     ConfigSource.default.at(path).loadOrThrow[ApplicationConfig]
-  }
 
 }

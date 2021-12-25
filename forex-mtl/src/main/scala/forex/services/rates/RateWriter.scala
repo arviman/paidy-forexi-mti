@@ -1,7 +1,5 @@
 package forex.services.rates
 
-import cats.effect.IO
-
-trait RateWriter {
-  def updateRates():IO[Boolean]
+trait RateWriter[F[_]] {
+  def updateRates: F[Boolean]
 }
