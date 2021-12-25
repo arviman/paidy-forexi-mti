@@ -10,24 +10,28 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 import org.http4s.{Headers, HttpVersion, Request, Uri}
 import wvlet.log.LogSupport
 
-import java.util.concurrent.Executors
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success, Try}
 
-class RateClientProxyJavaNetImpl[A[_] : Async](config: RateApiConfig) extends RateClientyProxyBase[A](config) with LogSupport {
+class RateClientProxyJavaNetImpl[A[_]: Async](config: RateApiConfig)
+    extends RateClientyProxyBase[A](config)
+    with LogSupport {
 
-  def fetchResponseJdk: A[OneFrameApiResponse] = {
+  def fetchResponseJdk: A[OneFrameApiResponse] =
     Try(
-      Uri.fromString(ratesUrl.toString)
-        .map(uri =>
-          JdkHttpClient.simple[A].use { // Create a client
-            httpClient: Client[A] =>
-              httpClient.expectOr[OneFrameApiResponse](Request[A](GET, uri, HttpVersion.`HTTP/1.1`, Headers("token" -> config.token)))(
-                err => {
-                  error(s"Error while getting response from rate API: ${err.status}")
-                  (new Throwable).pure[A]
-                }
-              )
+      Uri
+        .fromString(ratesUrl.toString)
+        .map(
+          uri =>
+            JdkHttpClient.simple[A].use { // Create a client
+              httpClient: Client[A] =>
+                httpClient.expectOr[OneFrameApiResponse](
+                  Request[A](GET, uri, HttpVersion.`HTTP/1.1`, Headers("token" -> config.token))
+                )(
+                  err => {
+                    error(s"Error while getting response from rate API: ${err.status}")
+                    (new Throwable).pure[A]
+                  }
+                )
           }
         )
     ) match {
@@ -44,24 +48,27 @@ class RateClientProxyJavaNetImpl[A[_] : Async](config: RateApiConfig) extends Ra
         List[OneFrameApiResponseRow]().pure[A]
     }
 
-  }
   /** Decode the response
-   * @return an exception
-   */
+    * @return an exception
+    */
   def fetchResponse: A[OneFrameApiResponse] = {
     info("fetching response from " + ratesUrl.toString)
 
     Try(
-      Uri.fromString(ratesUrl.toString)
-        .map(uri =>
-          JavaNetClientBuilder[A].resource.use { // Create a client
-            httpClient: Client[A] =>
-              httpClient.expectOr[OneFrameApiResponse](Request[A](GET, uri, HttpVersion.`HTTP/1.1`, Headers("token" -> config.token)))(
-                err => {
-                  error(s"Error while getting response from rate API: ${err.status}")
-                  (new Throwable).pure[A]
-                }
-              )
+      Uri
+        .fromString(ratesUrl.toString)
+        .map(
+          uri =>
+            JavaNetClientBuilder[A].resource.use { // Create a client
+              httpClient: Client[A] =>
+                httpClient.expectOr[OneFrameApiResponse](
+                  Request[A](GET, uri, HttpVersion.`HTTP/1.1`, Headers("token" -> config.token))
+                )(
+                  err => {
+                    error(s"Error while getting response from rate API: ${err.status}")
+                    (new Throwable).pure[A]
+                  }
+                )
           }
         )
     ) match {

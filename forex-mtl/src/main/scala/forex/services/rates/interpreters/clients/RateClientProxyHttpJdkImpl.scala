@@ -13,11 +13,10 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 class RateClientProxyHttpJdkImpl[F[_]: Async](config: RateApiConfig)
     extends RateClientyProxyBase[F](config)
     with LogSupport {
-  val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
+  val ec: ExecutionContextExecutor   = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
   val client: Resource[F, Client[F]] = JdkHttpClient.simple[F]
   def fetchStatus(c: Client[F], uri: Uri): F[Status] =
     c.status(Request[F](Method.GET, uri = uri))
-
 
   override def fetchResponse: F[OneFrameApiResponse] = {
     debug("calling with Http JDK client")
@@ -30,13 +29,12 @@ class RateClientProxyHttpJdkImpl[F[_]: Async](config: RateApiConfig)
             HttpVersion.`HTTP/1.1`,
             Headers("token" -> config.token)
           )
-      )
-          (
+        )(
           err => {
             error(s"Error while getting response from rate API: ${err.status}")
             (new Throwable).pure[F]
           }
-        )
+      )
     )
 
   }

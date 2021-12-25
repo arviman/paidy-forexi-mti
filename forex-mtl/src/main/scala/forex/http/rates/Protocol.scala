@@ -3,10 +3,10 @@ package forex.http.rates
 import forex.domain.Currency.show
 import forex.domain.Rate.Pair
 import forex.domain._
+import forex.domain.oneFrameAPI.OneFrameApiResponseRow
 import io.circe._
 import io.circe.generic.extras.Configuration
-import forex.domain.oneFrameAPI.OneFrameApiResponseRow
-import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{ deriveConfiguredDecoder, deriveConfiguredEncoder }
 
 object Protocol {
 
@@ -29,8 +29,8 @@ object Protocol {
 
   implicit val currencyDecoder: Decoder[Currency] = deriveConfiguredDecoder[Currency]
 
-  //deriveConfiguredEncoder[Price]
-  implicit val priceEncoder: Encoder[Price] = Encoder.encodeString.contramap[Price](x=>x.value.setScale(8, BigDecimal.RoundingMode.UP).toString())
+  implicit val priceEncoder: Encoder[Price] =
+    Encoder.encodeString.contramap[Price](x => x.value.setScale(8, BigDecimal.RoundingMode.UP).toString())
 
   implicit val pairEncoder: Encoder[Pair] =
     deriveConfiguredEncoder[Pair]
@@ -43,12 +43,14 @@ object Protocol {
 
   implicit val encodeTimestamp: Encoder.AsObject[Timestamp] = deriveConfiguredEncoder[Timestamp]
 
-
-  implicit val oneFrameApiResponseRowDecoder: Decoder[OneFrameApiResponseRow] = deriveConfiguredDecoder[OneFrameApiResponseRow]
+  implicit val oneFrameApiResponseRowDecoder: Decoder[OneFrameApiResponseRow] =
+    deriveConfiguredDecoder[OneFrameApiResponseRow]
 
   type OneFrameApiResponse = List[OneFrameApiResponseRow]
-  implicit val OneFrameResponseDecoder = Decoder[OneFrameApiResponse].prepare(_.root)
+  // don't add type annotation here
+  implicit val OneFrameResponseDecoder= Decoder[OneFrameApiResponse].prepare(_.root)
 
-  implicit val oneFrameApiResponseRowEncode: Encoder.AsObject[OneFrameApiResponseRow] = deriveConfiguredEncoder[OneFrameApiResponseRow]
+  implicit val oneFrameApiResponseRowEncode: Encoder.AsObject[OneFrameApiResponseRow] =
+    deriveConfiguredEncoder[OneFrameApiResponseRow]
 
 }
