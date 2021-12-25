@@ -1,7 +1,7 @@
 package forex.services.rates.interpreters.clients
 
 import cats.Applicative
-import forex.domain.{ Currency, Price, Rate, Timestamp }
+import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.services.rates.RateClientProxy
 
 import java.time.OffsetDateTime

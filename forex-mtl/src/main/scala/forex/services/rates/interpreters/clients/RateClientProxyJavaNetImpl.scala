@@ -1,20 +1,23 @@
 package forex.services.rates.interpreters.clients
 
 import cats.effect.Async
-import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps}
+import cats.implicits.{ catsSyntaxApplicativeId, toFunctorOps }
 import forex.config.RateApiConfig
 import forex.domain.oneFrameAPI.OneFrameApiResponseRow
+import forex.http.rates.Protocol.OneFrameApiResponse
 import org.http4s.Method.GET
-import org.http4s.client.{Client, JavaNetClientBuilder}
+import org.http4s.client.{ Client, JavaNetClientBuilder }
 import org.http4s.jdkhttpclient.JdkHttpClient
-import org.http4s.{Headers, HttpVersion, Request, Uri}
+import org.http4s.{ Headers, HttpVersion, Request, Uri }
 import wvlet.log.LogSupport
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 class RateClientProxyJavaNetImpl[A[_]: Async](config: RateApiConfig)
     extends RateClientyProxyBase[A](config)
     with LogSupport {
+
+  import forex.http.rates.Protocol.oneFrameResponseEntityDecoder
 
   def fetchResponseJdk: A[OneFrameApiResponse] =
     Try(

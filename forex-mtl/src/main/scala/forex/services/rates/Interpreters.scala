@@ -7,8 +7,8 @@ import forex.services.rates.interpreters._
 import forex.services.rates.interpreters.clients.RateClientProxyHttpJdkImpl
 
 object Interpreters {
-  def rateClientProxy[F[_]: Async](config: RateApiConfig)                   = new RateClientProxyHttpJdkImpl[F](config)
-  def rateService[G[_]: Monad](sharedState: SharedState[G]): RateService[G] = new RateServiceImpl[G](sharedState)
-  def ratePollerService[F[_]: Async](sharedStateIO: SharedState[F], config: RateApiConfig): RateWriter[F] =
-    new RateWriterImpl[F](rateClientProxy[F](config), sharedStateIO)
+  def rateClientProxy[A[_]: Async](config: RateApiConfig)                   = new RateClientProxyHttpJdkImpl[A](config)
+  def rateService[M[_]: Monad](sharedState: SharedState[M]): RateService[M] = new RateServiceImpl[M](sharedState)
+  def ratePollerService[A[_]: Async](sharedStateIO: SharedState[A], config: RateApiConfig): RateWriter[A] =
+    new RateWriterImpl[A](rateClientProxy[A](config), sharedStateIO)
 }
