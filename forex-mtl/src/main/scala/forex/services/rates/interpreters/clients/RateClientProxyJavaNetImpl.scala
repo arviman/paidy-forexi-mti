@@ -16,9 +16,6 @@ import scala.util.{Failure, Success, Try}
 
 class RateClientProxyJavaNetImpl[A[_] : Async](config: RateApiConfig) extends RateClientyProxyBase[A](config) with LogSupport {
 
-  val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
-
-
   def fetchResponseJdk: A[OneFrameApiResponse] = {
     Try(
       Uri.fromString(ratesUrl.toString)
@@ -40,7 +37,6 @@ class RateClientProxyJavaNetImpl[A[_] : Async](config: RateApiConfig) extends Ra
             error("Error creating Uri")
             List[OneFrameApiResponseRow]().pure[A]
           case Right(res) =>
-            res.map(x => info(s"Returning response from API ${x.size}"))
             res
         }
       case Failure(err) =>

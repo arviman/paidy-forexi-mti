@@ -22,6 +22,7 @@ abstract class RateClientyProxyBase[A[_] : Async](config: RateApiConfig) extends
 
   override def getRates: A[List[Rate]] = {
 
+    debug("getting rates")
     fetchResponse.map(
       _.map(
         item =>

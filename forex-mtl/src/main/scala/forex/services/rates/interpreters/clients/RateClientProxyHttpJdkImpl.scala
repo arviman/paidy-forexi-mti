@@ -20,7 +20,7 @@ class RateClientProxyHttpJdkImpl[F[_]: Async](config: RateApiConfig)
 
 
   override def fetchResponse: F[OneFrameApiResponse] = {
-    info("calling with Http JDK client")
+    debug("calling with Http JDK client")
     client.use(
       c =>
         c.expectOr[OneFrameApiResponse](

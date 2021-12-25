@@ -15,7 +15,7 @@ class RateWriterImpl[A[_]:Monad](rateClientProxy: RateClientProxy[A], rateMap: S
    */
 
   override def updateRates: A[Boolean] = {
-    info("updating rates")
+    debug("updating rates")
     rateClientProxy.getRates.flatMap(rates => setRates(rates))
   }
 
@@ -36,9 +36,11 @@ class RateWriterImpl[A[_]:Monad](rateClientProxy: RateClientProxy[A], rateMap: S
   }
 
   def setRates(rates: List[Rate]):A[Boolean]= {
+    debug(s"setting ${rates.size} rates")
     val newMap = getMapFromRates(rates)
     for {
-      _ <- rateMap.set(newMap)
+      oldMap <- rateMap.getAndUpdate(_=>newMap)
+      _ = debug(s"old map had ${oldMap.size}")
     }
     yield newMap.nonEmpty
   }
