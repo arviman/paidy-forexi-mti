@@ -1,12 +1,13 @@
-package forex.services.rates.interpreters
+package forex.services.rates.interpreters.clients
 
 import cats.effect.Async
+import cats.implicits.toFunctorOps
 import forex.config.RateApiConfig
 import org.http4s.Method.GET
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.{Headers, HttpVersion, Request, Uri}
 import wvlet.log.LogSupport
-import cats.implicits.toFunctorOps
+
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 

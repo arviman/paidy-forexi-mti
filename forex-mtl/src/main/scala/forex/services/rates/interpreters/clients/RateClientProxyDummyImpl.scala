@@ -1,4 +1,4 @@
-package forex.services.rates.interpreters
+package forex.services.rates.interpreters.clients
 
 import cats.Applicative
 import forex.domain.{Currency, Price, Rate, Timestamp}

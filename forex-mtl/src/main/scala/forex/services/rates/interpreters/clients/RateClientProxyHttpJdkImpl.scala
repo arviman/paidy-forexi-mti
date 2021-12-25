@@ -1,4 +1,4 @@
-package forex.services.rates.interpreters
+package forex.services.rates.interpreters.clients
 
 import cats.effect._
 import cats.implicits.catsSyntaxApplicativeId

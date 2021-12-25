@@ -29,8 +29,8 @@ object Protocol {
 
   implicit val currencyDecoder: Decoder[Currency] = deriveConfiguredDecoder[Currency]
 
-  implicit val priceEncoder: Encoder[Price] =
-    Encoder.encodeString.contramap[Price](x=>x.value.setScale(5, BigDecimal.RoundingMode.UP).toString())
+  //deriveConfiguredEncoder[Price]
+  implicit val priceEncoder: Encoder[Price] = Encoder.encodeString.contramap[Price](x=>x.value.setScale(8, BigDecimal.RoundingMode.UP).toString())
 
   implicit val pairEncoder: Encoder[Pair] =
     deriveConfiguredEncoder[Pair]

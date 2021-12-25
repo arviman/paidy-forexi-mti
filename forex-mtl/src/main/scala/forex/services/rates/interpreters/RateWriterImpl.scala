@@ -1,7 +1,7 @@
 package forex.services.rates.interpreters
 
 import cats.Monad
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
+import cats.implicits.{toFlatMapOps, toFunctorOps}
 import forex.domain.Types.SharedState
 import forex.domain.{Currency, Rate}
 import forex.services.rates.{RateClientProxy, RateWriter}
@@ -15,7 +15,8 @@ class RateWriterImpl[A[_]:Monad](rateClientProxy: RateClientProxy[A], rateMap: S
    */
 
   override def updateRates: A[Boolean] = {
-    rateClientProxy.getRates.flatMap(setCache)
+    info("updating rates")
+    rateClientProxy.getRates.flatMap(rates => setRates(rates))
   }
 
   /**
@@ -34,16 +35,12 @@ class RateWriterImpl[A[_]:Monad](rateClientProxy: RateClientProxy[A], rateMap: S
     }
   }
 
-  def setCache(rates: List[Rate]): A[Boolean] = {
-    val newMap: Map[Currency, Rate] = getMapFromRates(rates)
-    info(s"Got rates to be added to the cache ${newMap.size}")
-    if(newMap.isEmpty)
-      false.pure[A]
-    else {
-      rateMap.updateAndGet(_=>newMap).map(oldMap => info(s"used to have {${oldMap.size}}"))
-      newMap.nonEmpty.pure[A]
+  def setRates(rates: List[Rate]):A[Boolean]= {
+    val newMap = getMapFromRates(rates)
+    for {
+      _ <- rateMap.set(newMap)
     }
-
+    yield newMap.nonEmpty
   }
 
 }

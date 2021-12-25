@@ -1,8 +1,6 @@
 package forex
 
-import cats.implicits.{catsSyntaxFlatMapOps, toFlatMapOps, toFunctorOps}
 import cats.effect._
-import cats.effect.implicits.genSpawnOps
 import forex.config._
 import forex.domain.{Currency, Rate}
 import forex.services.RatesServices
@@ -15,24 +13,24 @@ object Main extends IOApp {
   }
   override def run(args: List[String]): IO[ExitCode] = {
     setLogConfig()
-    new Application[IO]()
+    new Application()
       .startServer()
   }
 }
 
-class Application[F[_]](implicit A:Async[F]) extends LogSupport{
-  def startServer(): F[ExitCode] = {
+class Application extends LogSupport{
+  def startServer(): IO[ExitCode] = {
     val config = Config.getApplicationConfig("app")
-    val wait: F[Unit] = Temporal[F].sleep(config.pollDuration)
-    val waitOnFailure: F[Unit] = Temporal[F].sleep(config.pollOnFailureDuration) // we want to retry sooner in case one-frame-api is down
+    val wait: IO[Unit] = IO.sleep(config.pollDuration)
+    val waitOnFailure: IO[Unit] = IO.sleep(config.pollOnFailureDuration) // we want to retry sooner in case one-frame-api is down
 
     for {
-      rateMap <- Ref.of[F, Map[Currency, Rate]](Map[Currency, Rate]())
+      rateMap <- Ref.of[IO, Map[Currency, Rate]](Map[Currency, Rate]())
       _ = info("starting server")
-      _ = (RatesServices.ratePollerService[F](rateMap, config.rateApi)
-        .updateRates.map(res => if(res) wait else waitOnFailure)).foreverM.start
-      module: Module[F] = new Module[F](config, rateMap)
-      code <- org.http4s.blaze.server.BlazeServerBuilder[F]
+      _ <- (RatesServices.ratePollerService[IO](rateMap, config.rateApi)
+        .updateRates flatMap (if(_) wait else waitOnFailure)).foreverM.start
+      module: Module[IO] = new Module[IO](config, rateMap)
+      code <- org.http4s.blaze.server.BlazeServerBuilder[IO]
                .bindHttp(config.http.port, config.http.host)
                .withHttpApp(module.httpApp)
                .serve

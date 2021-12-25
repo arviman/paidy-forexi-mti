@@ -7,6 +7,7 @@ object Dependencies {
     val catsEffect          = "3.3.0"
     val fs2                 = "3.2.3"
     val http4s              = "0.23.7"
+    val http4sJdkClient     = "0.5.0"
     val circe               = "0.14.1"
     val pureConfig          = "0.17.1"
     val scalaUri            = "4.0.0-M3"
@@ -31,6 +32,7 @@ object Dependencies {
     lazy val http4sDsl           = http4s("http4s-dsl")
     lazy val http4sServer        = http4s("http4s-blaze-server")
     lazy val http4sClient        = http4s("http4s-blaze-client")
+    lazy val http4sJdkClient     = "org.http4s" %% "http4s-jdk-http-client" % Versions.http4sJdkClient
     lazy val http4sCirce         = http4s("http4s-circe")
     lazy val circeCore           = circe("circe-core")
     lazy val circeGeneric        = circe("circe-generic")

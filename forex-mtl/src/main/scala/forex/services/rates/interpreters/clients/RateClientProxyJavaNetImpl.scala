@@ -1,13 +1,13 @@
-package forex.services.rates.interpreters
+package forex.services.rates.interpreters.clients
 
 import cats.effect.Async
+import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps}
 import forex.config.RateApiConfig
 import forex.domain.oneFrameAPI.OneFrameApiResponseRow
 import org.http4s.Method.GET
-import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps}
-import org.http4s.{Headers, HttpVersion, Request, Uri}
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.http4s.jdkhttpclient.JdkHttpClient
+import org.http4s.{Headers, HttpVersion, Request, Uri}
 import wvlet.log.LogSupport
 
 import java.util.concurrent.Executors
